@@ -21,7 +21,7 @@ fn setup(
     let gabe_handle = asset_server
         .load_sync(
             &mut textures,
-            "../bevy/assets/textures/rpg/chars/gabe/gabe-idle-run.png",
+            "assets/gabe-idle-run.png",
         )
         .unwrap();
     let gabe = textures.get(&gabe_handle).unwrap();
@@ -47,6 +47,9 @@ fn movement(
     let mut direction = 0.0;
     if keyboard_input.pressed(KeyCode::Left) {
         direction -= 1.0;
+    }
+    if keyboard_input.pressed(KeyCode::Right) {
+        direction += 1.0;
     }
 
     for (m, mut t) in &mut q.iter() {
