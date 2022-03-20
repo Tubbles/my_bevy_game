@@ -1,0 +1,6 @@
+assets/
+bin/
+build/
+build-external/
+gen/
+target/
