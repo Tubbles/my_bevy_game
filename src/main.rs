@@ -235,7 +235,12 @@ fn print_mouse_events_system(
 }
 
 /// This system prints out all mouse events as they come in
-fn wasd(time: Res<Time>, input: Res<Input<KeyCode>>, mut game: ResMut<MyGame>) {
+fn wasd(
+    time: Res<Time>,
+    input: Res<Input<KeyCode>>,
+    mut game: ResMut<MyGame>,
+    camera_transform: Query<(&Transform, &Camera)>,
+) {
     let mut intent = Vec3::new(0.0, 0.0, 0.0);
     if input.pressed(KeyCode::W) {
         intent.x += 1.0;
@@ -254,6 +259,15 @@ fn wasd(time: Res<Time>, input: Res<Input<KeyCode>>, mut game: ResMut<MyGame>) {
     }
     if input.pressed(KeyCode::LControl) {
         intent.y -= 1.0;
+    }
+
+    for (transform, camera) in camera_transform.iter() {
+        if camera.name == Some(CameraPlugin::CAMERA_3D.to_string()) {
+            intent = transform.forward() * intent.x
+                + transform.up() * intent.y
+                + transform.left() * intent.z;
+            // info!("{:?}", transform.forward());
+        }
     }
 
     let next_pos = intent * time.delta_seconds() * SPEED;
