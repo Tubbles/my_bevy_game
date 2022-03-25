@@ -68,14 +68,81 @@ fn main() {
         .init_resource::<window::PrevWindow>()
         .add_system(toggle_fullscreen)
         .add_system(window::update_window)
+        .add_system(animate_sprite_system)
         .run();
 }
 
-fn setup(mut commands: Commands, mut game: ResMut<MyGame>) {
+fn animate_sprite_system(
+    time: Res<Time>,
+    texture_atlases: Res<Assets<TextureAtlas>>,
+    mut query: Query<(&mut Timer, &mut TextureAtlasSprite, &Handle<TextureAtlas>)>,
+) {
+    for (mut timer, mut sprite, texture_atlas_handle) in query.iter_mut() {
+        timer.tick(time.delta());
+        if timer.finished() {
+            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+            sprite.index = (sprite.index + 1) % texture_atlas.textures.len();
+            println!("sprite.index = {}", sprite.index);
+        }
+    }
+}
+
+fn setup(
+    mut commands: Commands,
+    mut game: ResMut<MyGame>,
+    asset_server: Res<AssetServer>,
+    // mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let size = 32.0;
+    let scale = 1.0 / size;
+
     game.button = false;
     game.camera = Vec3::new(6.00, 0.94, 3.51);
     game.pos = Vec3::new(0.0, 0.0, 0.0);
     game.orig_camera = None;
+
+    let texture_handle = asset_server.load("texture_atlas/ground_side.png");
+    // let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(size, size), 1, 3);
+    // let texture_atlas_handle = texture_atlases.add(texture_atlas);
+
+    // load a texture and retrieve its aspect ratio
+    // let texture_handle = asset_server.load("branding/bevy_logo_dark_big.png");
+    // let aspect = 0.25;
+
+    // create a new quad mesh. this is what we will apply the texture to
+    let quad_handle = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(size, size))));
+
+    // this material renders the texture normally
+    let material_handle = materials.add(StandardMaterial {
+        base_color_texture: Some(texture_handle.clone()),
+        alpha_mode: AlphaMode::Blend,
+        unlit: true,
+        ..Default::default()
+    });
+
+    // textured quad - normal
+    commands.spawn_bundle(PbrBundle {
+        mesh: quad_handle.clone(),
+        material: material_handle,
+        transform: Transform {
+            translation: Vec3::new(0.0, 0.0, 1.5),
+            rotation: Quat::from_rotation_x(-std::f32::consts::PI / 5.0),
+            scale: Vec3::splat(scale),
+            ..Default::default()
+        },
+        ..Default::default()
+    });
+
+    // commands
+    //     .spawn_bundle(SpriteSheetBundle {
+    //         texture_atlas: texture_atlas_handle,
+    //         transform: Transform::from_scale(Vec3::splat(1000.0))
+    //             .with_translation(Vec3::new(100.0, 100.0, 100.0)),
+    //         ..Default::default()
+    //     })
+    //     .insert(Timer::from_seconds(0.1, true));
 
     // commands
     //     .spawn()
@@ -159,19 +226,18 @@ fn create_pieces(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // Load all the meshes
-    let king_mesh: Handle<Mesh> = asset_server.load("models/chess_kit/pieces.glb#Mesh0/Primitive0");
+    let king_mesh: Handle<Mesh> = asset_server.load("model/chess_kit/pieces.glb#Mesh0/Primitive0");
     let king_cross_mesh: Handle<Mesh> =
-        asset_server.load("models/chess_kit/pieces.glb#Mesh1/Primitive0");
-    let pawn_mesh: Handle<Mesh> = asset_server.load("models/chess_kit/pieces.glb#Mesh2/Primitive0");
+        asset_server.load("model/chess_kit/pieces.glb#Mesh1/Primitive0");
+    let pawn_mesh: Handle<Mesh> = asset_server.load("model/chess_kit/pieces.glb#Mesh2/Primitive0");
     let knight_1_mesh: Handle<Mesh> =
-        asset_server.load("models/chess_kit/pieces.glb#Mesh3/Primitive0");
+        asset_server.load("model/chess_kit/pieces.glb#Mesh3/Primitive0");
     let knight_2_mesh: Handle<Mesh> =
-        asset_server.load("models/chess_kit/pieces.glb#Mesh4/Primitive0");
-    let rook_mesh: Handle<Mesh> = asset_server.load("models/chess_kit/pieces.glb#Mesh5/Primitive0");
+        asset_server.load("model/chess_kit/pieces.glb#Mesh4/Primitive0");
+    let rook_mesh: Handle<Mesh> = asset_server.load("model/chess_kit/pieces.glb#Mesh5/Primitive0");
     let bishop_mesh: Handle<Mesh> =
-        asset_server.load("models/chess_kit/pieces.glb#Mesh6/Primitive0");
-    let queen_mesh: Handle<Mesh> =
-        asset_server.load("models/chess_kit/pieces.glb#Mesh7/Primitive0");
+        asset_server.load("model/chess_kit/pieces.glb#Mesh6/Primitive0");
+    let queen_mesh: Handle<Mesh> = asset_server.load("model/chess_kit/pieces.glb#Mesh7/Primitive0");
 
     // Add some materials
     let white_material = materials.add(Color::rgb(1., 0.8, 0.8).into());
