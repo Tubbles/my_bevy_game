@@ -30,7 +30,8 @@ const RESET_FOCUS: [f32; 3] = [
     21 as f32 / 2.0,
 ];
 
-const SPEED: f32 = 10.0;
+const SPEED: f32 = 5.0;
+const SENS: f32 = 500.0;
 
 #[derive(Default)]
 struct MyGame {
@@ -64,27 +65,11 @@ fn main() {
         .add_system(exit)
         .add_system(print_mouse_events_system)
         .add_system(wasd)
-        .add_system(camera_writer)
-        .add_system(animate_sprite_system);
+        .add_system(camera_writer);
 
     window::init(&mut app);
 
     app.run();
-}
-
-fn animate_sprite_system(
-    time: Res<Time>,
-    texture_atlases: Res<Assets<TextureAtlas>>,
-    mut query: Query<(&mut Timer, &mut TextureAtlasSprite, &Handle<TextureAtlas>)>,
-) {
-    for (mut timer, mut sprite, texture_atlas_handle) in query.iter_mut() {
-        timer.tick(time.delta());
-        if timer.finished() {
-            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-            sprite.index = (sprite.index + 1) % texture_atlas.textures.len();
-            println!("sprite.index = {}", sprite.index);
-        }
-    }
 }
 
 fn setup(
@@ -271,12 +256,10 @@ fn print_mouse_events_system(
 
     for event in mouse_motion_events.iter() {
         if game.button {
-            game.camera.y = (game.camera.y - event.delta.y / 100.0)
+            game.camera.y = (game.camera.y - event.delta.y / SENS)
                 .clamp(std::f32::EPSILON, std::f32::consts::PI - std::f32::EPSILON);
-            // game.camera.z = (game.camera.z + event.delta.x / 100.0)
-            //     .clamp(-std::f32::consts::FRAC_PI_2, std::f32::consts::FRAC_PI_2);
             game.camera.z =
-                (game.camera.z + event.delta.x / 100.0).rem_euclid(std::f32::consts::PI * 2.0);
+                (game.camera.z + event.delta.x / SENS).rem_euclid(std::f32::consts::PI * 2.0);
         }
     }
 
