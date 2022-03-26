@@ -7,7 +7,6 @@ use bevy::{
     input::{keyboard::KeyCode, Input},
     prelude::*,
     render::camera::CameraPlugin,
-    window::WindowMode,
     window::WindowMode::*,
 };
 
@@ -21,6 +20,8 @@ fn spherical_to_cartesian(spherical: &Vec3) -> Vec3 {
 
 mod piece;
 use piece::*;
+
+mod window;
 
 #[rustfmt::skip]
 const RESET_FOCUS: [f32; 3] = [
@@ -43,10 +44,9 @@ struct MyGame {
 struct Player(Transform);
 
 fn main() {
-    App::new()
-        // Set antialiasing to use 4 samples
-        .insert_resource(Msaa { samples: 4 })
-        // Set WindowDescriptor Resource to change title and size
+    let mut app = App::new();
+
+    app.insert_resource(Msaa { samples: 4 })
         .insert_resource(WindowDescriptor {
             title: "Chess!".to_string(),
             width: 640. * 2.,
@@ -65,11 +65,11 @@ fn main() {
         .add_system(print_mouse_events_system)
         .add_system(wasd)
         .add_system(camera_writer)
-        .init_resource::<window::PrevWindow>()
-        .add_system(toggle_fullscreen)
-        .add_system(window::update_window)
-        .add_system(animate_sprite_system)
-        .run();
+        .add_system(animate_sprite_system);
+
+    window::init(&mut app);
+
+    app.run();
 }
 
 fn animate_sprite_system(
@@ -104,12 +104,6 @@ fn setup(
     game.orig_camera = None;
 
     let texture_handle = asset_server.load("texture_atlas/ground_side.png");
-    // let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(size, size), 1, 3);
-    // let texture_atlas_handle = texture_atlases.add(texture_atlas);
-
-    // load a texture and retrieve its aspect ratio
-    // let texture_handle = asset_server.load("branding/bevy_logo_dark_big.png");
-    // let aspect = 0.25;
 
     // create a new quad mesh. this is what we will apply the texture to
     let quad_handle = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(size, size))));
@@ -134,15 +128,6 @@ fn setup(
         },
         ..Default::default()
     });
-
-    // commands
-    //     .spawn_bundle(SpriteSheetBundle {
-    //         texture_atlas: texture_atlas_handle,
-    //         transform: Transform::from_scale(Vec3::splat(1000.0))
-    //             .with_translation(Vec3::new(100.0, 100.0, 100.0)),
-    //         ..Default::default()
-    //     })
-    //     .insert(Timer::from_seconds(0.1, true));
 
     // commands
     //     .spawn()
@@ -183,10 +168,6 @@ fn setup(
 
 // Exit the app with ctrl+q
 fn exit(input: Res<Input<KeyCode>>, mut app_exit_events: EventWriter<AppExit>) {
-    // let ctrl = input.any_pressed([KeyCode::LControl, KeyCode::RControl]);
-    // if ctrl && input.just_pressed(KeyCode::Q) {
-    //     app_exit_events.send(AppExit);
-    // }
     if input.just_pressed(KeyCode::Escape) {
         app_exit_events.send(AppExit);
     }
@@ -355,73 +336,6 @@ fn camera_writer(game: Res<MyGame>, mut camera_transform: Query<(&mut Transform,
             transform.translation.y += game.pos.y;
             transform.translation.z += game.pos.z;
             // info!("{:?}", transform.translation);
-        }
-    }
-}
-
-mod window {
-    use bevy::{prelude::*, window::WindowMode};
-
-    #[derive(Default)]
-    pub struct PrevWindow(WindowDescriptor);
-
-    #[inline]
-    fn compare_f32(a: f32, b: f32) -> bool {
-        (a - b).abs() < std::f32::EPSILON
-    }
-
-    pub fn update_window(
-        mut prev_window: ResMut<PrevWindow>,
-        curr: Res<WindowDescriptor>,
-        mut windows: ResMut<Windows>,
-    ) {
-        if curr.is_changed() {
-            let window = windows.get_primary_mut().unwrap();
-            let prev = &prev_window.0;
-
-            if compare_f32(prev.width, curr.width) || compare_f32(prev.height, curr.height) {
-                window.set_resolution(curr.width, curr.height);
-            }
-            if prev.scale_factor_override != curr.scale_factor_override {
-                window.set_scale_factor_override(curr.scale_factor_override);
-            }
-            if prev.title != curr.title {
-                window.set_title(curr.title.clone());
-            }
-            if prev.vsync != curr.vsync {
-                window.set_vsync(curr.vsync);
-            }
-            if prev.resizable != curr.resizable {
-                window.set_resizable(curr.resizable);
-            }
-            if prev.decorations != curr.decorations {
-                window.set_decorations(curr.decorations);
-            }
-            if prev.cursor_visible != curr.cursor_visible {
-                window.set_cursor_visibility(curr.cursor_visible);
-            }
-            if prev.cursor_locked != curr.cursor_locked {
-                window.set_cursor_lock_mode(curr.cursor_locked);
-            }
-            match (prev.mode, curr.mode) {
-                (WindowMode::Windowed, WindowMode::Windowed)
-                | (WindowMode::BorderlessFullscreen, WindowMode::BorderlessFullscreen) => {}
-                _ => {
-                    window.set_mode(curr.mode);
-                }
-            }
-
-            prev_window.0 = curr.clone();
-        }
-    }
-}
-
-fn toggle_fullscreen(input: Res<Input<KeyCode>>, mut window_descriptor: ResMut<WindowDescriptor>) {
-    if input.just_pressed(KeyCode::F10) {
-        window_descriptor.mode = match window_descriptor.mode {
-            WindowMode::Windowed => WindowMode::BorderlessFullscreen,
-            WindowMode::BorderlessFullscreen => WindowMode::Windowed,
-            _ => unreachable!(),
         }
     }
 }
