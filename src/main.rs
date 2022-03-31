@@ -2,7 +2,7 @@
 
 use bevy::{
     app::AppExit,
-    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    diagnostic::{EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     input::mouse::{MouseButtonInput, MouseMotion, MouseWheel},
     input::ElementState,
     input::{keyboard::KeyCode, Input},
@@ -11,7 +11,9 @@ use bevy::{
     window::WindowMode::*,
 };
 
-use bevy_egui::{egui, EguiContext, EguiPlugin};
+// use bevy_egui::{egui, EguiContext, EguiPlugin};
+
+use bevy_editor_pls::*;
 
 fn spherical_to_cartesian(spherical: &Vec3) -> Vec3 {
     let (r, theta, phi) = (spherical.x, spherical.y, spherical.z);
@@ -47,11 +49,11 @@ struct MyGame {
 #[derive(Component)]
 struct Player(Transform);
 
-fn ui_example(mut egui_context: ResMut<EguiContext>) {
-    egui::Window::new("debug").show(egui_context.ctx_mut(), |ui| {
-        ui.label("fps: 123");
-    });
-}
+// fn ui_example(mut egui_context: ResMut<EguiContext>) {
+//     egui::Window::new("debug").show(egui_context.ctx_mut(), |ui| {
+//         ui.label("fps: 123");
+//     });
+// }
 
 fn main() {
     let mut app = App::new();
@@ -74,13 +76,15 @@ fn main() {
         .add_system(exit)
         .add_system(print_mouse_events_system)
         .add_system(wasd)
-        .add_plugin(EguiPlugin)
+        // .add_plugin(EguiPlugin)
         // Systems that create Egui widgets should be run during the `CoreStage::Update` stage,
         // or after the `EguiSystem::BeginFrame` system (which belongs to the `CoreStage::PreUpdate` stage).
-        .add_system(ui_example)
+        .add_plugin(EditorPlugin)
+        // .add_system(ui_example)
         .add_system(camera_writer)
-        .add_plugin(LogDiagnosticsPlugin::default())
-        .add_plugin(FrameTimeDiagnosticsPlugin::default());
+        .add_plugin(EntityCountDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_plugin(LogDiagnosticsPlugin::default());
 
     window::init(&mut app);
 
