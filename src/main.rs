@@ -1,3 +1,4 @@
+#![feature(derive_default_enum)]
 // #![feature(stmt_expr_attributes)]
 
 use bevy::{
@@ -22,6 +23,9 @@ fn spherical_to_cartesian(spherical: &Vec3) -> Vec3 {
     let y = r * theta.cos();
     Vec3::new(x, y, z)
 }
+
+mod entity;
+use entity::*;
 
 mod piece;
 use piece::*;
@@ -87,6 +91,7 @@ fn main() {
         .add_plugin(LogDiagnosticsPlugin::default());
 
     window::init(&mut app);
+    Block::init(&mut app);
 
     app.run();
 }
@@ -99,6 +104,10 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    let mut a = Block {
+        ..Default::default()
+    };
+    a.btype = BlockType::Air;
     let size = 32.0;
     let scale = 1.0 / size;
 
@@ -109,9 +118,6 @@ fn setup(
 
     let texture_handle = asset_server.load("texture_atlas/ground_side.png");
 
-    // create a new quad mesh. this is what we will apply the texture to
-    let quad_handle = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(size, size))));
-
     // this material renders the texture normally
     let material_handle = materials.add(StandardMaterial {
         base_color_texture: Some(texture_handle.clone()),
@@ -119,6 +125,9 @@ fn setup(
         unlit: true,
         ..Default::default()
     });
+
+    // create a new quad mesh. this is what we will apply the texture to
+    let quad_handle = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(size, size))));
 
     // textured quad - normal
     commands.spawn_bundle(PbrBundle {
